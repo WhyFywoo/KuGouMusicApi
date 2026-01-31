@@ -1,23 +1,23 @@
 name: Build Windows EXE with pkg
 
 on:
-  workflow_dispatch:          # 允许手动触发（在 Actions 页面点 Run workflow）
+  workflow_dispatch:
   push:
     tags:
-      - 'v*'                  # 当你 push 一个 v1.0.0 这样的 tag 时自动触发
+      - 'v*'
 
 jobs:
   build:
-    runs-on: windows-latest   # 使用 Windows runner 打包（最稳定，生成的 exe 兼容性最好）
+    runs-on: windows-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 18
         uses: actions/setup-node@v4
         with:
-          node-version: '20'    # 建议用 20 或 18，根据你的项目依赖调整
+          node-version: '18'          # ← 关键：改成 18
 
       - name: Install dependencies
         run: npm install
@@ -27,19 +27,19 @@ jobs:
 
       - name: Build EXE
         run: |
-          pkg . --targets node20-win-x64 --output KuGouMusicApi.exe
-        # 如果你的入口文件不是 package.json 的 bin/main，可以改成：
-        # pkg app.js --targets node20-win-x64 --output KuGouMusicApi.exe
+          pkg . --targets node18-win-x64 --output KuGouMusicApi.exe
+          # 如果想加调试信息，可以改成：
+          # pkg . --targets node18-win-x64 --output KuGouMusicApi.exe --debug
 
-      - name: Upload EXE as artifact (临时保存，可选)
+      - name: Upload EXE as artifact
         uses: actions/upload-artifact@v4
         with:
           name: KuGouMusicApi-exe
           path: KuGouMusicApi.exe
 
-      # ────────────── 以下部分：创建 Release 并上传 EXE ──────────────
+      # Release 部分保持不变（只在 tag 时触发）
       - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/')   # 只在 tag 触发时执行
+        if: startsWith(github.ref, 'refs/tags/')
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
@@ -49,8 +49,6 @@ jobs:
           prerelease: false
           files: KuGouMusicApi.exe
           body: |
-            Auto-built Windows EXE using pkg.
-            项目：酷狗音乐非官方 API 服务
-            使用方式：双击运行，默认监听 http://localhost:3000
-
-      # 如果你只想手动触发，不依赖 tag，也可以去掉上面 create_release 部分，只保留 upload-artifact
+            Windows EXE (使用 pkg + Node 18 打包)
+            双击运行，默认端口 3000
+            项目：酷狗音乐非官方 API
